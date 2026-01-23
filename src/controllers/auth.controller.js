@@ -233,18 +233,40 @@ exports.demoteToUser = async (req, res) => {
 
 // ========== PROTECTED CONTROLLERS (SUPER_ADMIN & ADMIN) ==========
 
+
 // Get all users
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find()
-      .select("-password")
+      .select("-password") // Exclude password
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 });
 
+    // Format the response to match your admin screen needs
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      name: user.name,
+      lastName: user.lastName || "",
+      email: user.email,
+      phone: user.mobileNumber || "Not provided",
+      address: user.permanentAddress || "Not provided",
+      profileImage: user.profileImage,
+      joinDate: user.createdAt.toISOString().split('T')[0], // Format: YYYY-MM-DD
+      status: user.isActive ? "Active" : "Inactive",
+      role: user.role,
+      currentPosition: user.currentPosition,
+      experience: user.experience || [],
+      education: user.education || [],
+      createdBy: user.createdBy ? {
+        name: user.createdBy.name,
+        email: user.createdBy.email
+      } : null,
+    }));
+
     res.json({
       message: "Users retrieved successfully",
-      count: users.length,
-      users,
+      count: formattedUsers.length,
+      users: formattedUsers,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
