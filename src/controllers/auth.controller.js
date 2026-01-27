@@ -391,8 +391,6 @@ exports.updateOwnProfile = async (req, res) => {
       currentPosition,
       experience,
       education,
-      // password,
-      // currentPassword
     } = req.body;
     
     const user = await User.findById(req.user.userId);
@@ -400,23 +398,26 @@ exports.updateOwnProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // If updating password, verify current password first
-    // if (password) {
-    //   if (!currentPassword) {
-    //     return res.status(400).json({ 
-    //       message: "Current password is required to change password" 
-    //     });
-    //   }
-
-    //   const isMatch = await bcrypt.compare(currentPassword, user.password);
-    //   if (!isMatch) {
-    //     return res.status(401).json({ 
-    //       message: "Current password is incorrect" 
-    //     });
-    //   }
-
-    //   user.password = await bcrypt.hash(password, 10);
-    // }
+    // Handle profile image upload
+    if (req.file) {
+      // If user already has a profile image, optionally delete the old one from Cloudinary
+      if (user.profileImage) {
+        try {
+          const { cloudinary } = require("../config/cloudinary");
+          // Extract public_id from the URL
+          const urlParts = user.profileImage.split('/');
+          const publicIdWithExtension = urlParts[urlParts.length - 1];
+          const publicId = `user-profiles/${publicIdWithExtension.split('.')[0]}`;
+          await cloudinary.uploader.destroy(publicId);
+        } catch (error) {
+          console.log("Error deleting old image:", error.message);
+          // Continue even if deletion fails
+        }
+      }
+      
+      // Set new profile image URL from Cloudinary
+      user.profileImage = req.file.path;
+    }
 
     // Update basic information
     if (name !== undefined) user.name = name;
@@ -458,6 +459,7 @@ exports.updateOwnProfile = async (req, res) => {
         email: user.email,
         mobileNumber: user.mobileNumber,
         permanentAddress: user.permanentAddress,
+        profileImage: user.profileImage, // ✅ ADD THIS to response
         role: user.role,
         currentPosition: user.currentPosition,
         experience: user.experience,
@@ -466,6 +468,7 @@ exports.updateOwnProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error("Update profile error:", error); // Add logging
     res.status(500).json({ error: error.message });
   }
 };
