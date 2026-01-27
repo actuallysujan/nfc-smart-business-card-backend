@@ -58,17 +58,12 @@ router.get(
   authController.getOwnProfile
 );
 
-// Update user profile with image
-router.put(
-  "/users/:id",
-  authMiddleware,
-  upload.single("profileImage"), // "profileImage" is the field name
-  authController.updateUserProfile
-);
+
 // Users can update their own profile (name, password, etc.)
 router.patch(
   "/profile",
   protect(["SUPER_ADMIN", "ADMIN", "USER"]),
+  upload.single("profileImage"),
   authController.updateOwnProfile
 );
 
