@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const authController = require("../controllers/auth.controller");
+const { upload } = require("../config/cloudinary"); 
 const { protect, checkPermission } = require("../middleware/auth.middleware");
 
 // ========== PUBLIC ROUTES (No Authentication Required) ==========
@@ -56,6 +57,13 @@ router.get(
   authController.getOwnProfile
 );
 
+// Update user profile with image
+router.put(
+  "/users/:id",
+  authMiddleware,
+  upload.single("profileImage"), // "profileImage" is the field name
+  authController.updateUserProfile
+);
 // Users can update their own profile (name, password, etc.)
 router.patch(
   "/profile",

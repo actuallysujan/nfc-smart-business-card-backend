@@ -9,4 +9,7 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 
+// Serve uploaded files
+app.use("/uploads", express.static("uploads"));
+
 module.exports = app;

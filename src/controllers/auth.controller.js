@@ -250,7 +250,7 @@ exports.getAllUsers = async (req, res) => {
       email: user.email,
       phone: user.mobileNumber || "Not provided",
       address: user.permanentAddress || "Not provided",
-      profileImage: user.profileImage,
+      profileImage: user.profileImage || null,
       joinDate: user.createdAt.toISOString().split('T')[0], // Format: YYYY-MM-DD
       status: user.isActive ? "Active" : "Inactive",
       role: user.role,
@@ -267,6 +267,47 @@ exports.getAllUsers = async (req, res) => {
       message: "Users retrieved successfully",
       count: formattedUsers.length,
       users: formattedUsers,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Update user profile with image
+exports.updateUserProfile = async (req, res) => {
+  try {
+    const userId = req.params.id || req.user.id; // from auth middleware
+    const updateData = { ...req.body };
+
+    // If a file was uploaded
+    if (req.file) {
+      // For Cloudinary
+      updateData.profileImage = req.file.path;
+      
+      // For local storage
+      // updateData.profileImage = `/uploads/profiles/${req.file.filename}`;
+      
+      // Delete old image from cloudinary if exists
+      const user = await User.findById(userId);
+      if (user.profileImage) {
+        const publicId = user.profileImage.split('/').pop().split('.')[0];
+        await cloudinary.uploader.destroy(`user-profiles/${publicId}`);
+      }
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
