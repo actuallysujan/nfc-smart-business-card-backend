@@ -383,6 +383,15 @@ exports.getOwnProfile = async (req, res) => {
 // Update own profile with extended fields
 exports.updateOwnProfile = async (req, res) => {
   try {
+    // ✅ DEBUG LOGS - Check what's being received
+    console.log("=== UPDATE PROFILE DEBUG ===");
+    console.log("req.body:", req.body);
+    console.log("req.file:", req.file);
+    console.log("Content-Type:", req.headers['content-type']);
+    console.log("Authorization:", req.headers['authorization'] ? 'Present' : 'Missing');
+    console.log("User from token:", req.user);
+    console.log("=== END DEBUG ===");
+
     const {
       name,
       lastName,
@@ -400,23 +409,26 @@ exports.updateOwnProfile = async (req, res) => {
 
     // Handle profile image upload
     if (req.file) {
-      // If user already has a profile image, optionally delete the old one from Cloudinary
+      console.log("✅ File received! Path:", req.file.path);
+      
+      // If user already has a profile image, delete the old one from Cloudinary
       if (user.profileImage) {
         try {
           const { cloudinary } = require("../config/cloudinary");
-          // Extract public_id from the URL
           const urlParts = user.profileImage.split('/');
           const publicIdWithExtension = urlParts[urlParts.length - 1];
           const publicId = `user-profiles/${publicIdWithExtension.split('.')[0]}`;
           await cloudinary.uploader.destroy(publicId);
+          console.log("Old image deleted from Cloudinary");
         } catch (error) {
           console.log("Error deleting old image:", error.message);
-          // Continue even if deletion fails
         }
       }
       
       // Set new profile image URL from Cloudinary
       user.profileImage = req.file.path;
+    } else {
+      console.log("❌ No file received in req.file");
     }
 
     // Update basic information
@@ -426,29 +438,50 @@ exports.updateOwnProfile = async (req, res) => {
     if (permanentAddress !== undefined) user.permanentAddress = permanentAddress;
     if (currentPosition !== undefined) user.currentPosition = currentPosition;
     
-    // Update experience if provided
+    // Parse experience if it's a string (from form-data)
     if (experience !== undefined) {
-      // Validate experience array
-      if (!Array.isArray(experience)) {
+      try {
+        const parsedExperience = typeof experience === 'string' 
+          ? JSON.parse(experience) 
+          : experience;
+        
+        if (!Array.isArray(parsedExperience)) {
+          return res.status(400).json({ 
+            message: "Experience must be an array" 
+          });
+        }
+        user.experience = parsedExperience;
+      } catch (error) {
+        console.log("Experience parse error:", error.message);
         return res.status(400).json({ 
-          message: "Experience must be an array" 
+          message: "Invalid experience format" 
         });
       }
-      user.experience = experience;
     }
     
-    // Update education if provided
+    // Parse education if it's a string (from form-data)
     if (education !== undefined) {
-      // Validate education array
-      if (!Array.isArray(education)) {
+      try {
+        const parsedEducation = typeof education === 'string' 
+          ? JSON.parse(education) 
+          : education;
+        
+        if (!Array.isArray(parsedEducation)) {
+          return res.status(400).json({ 
+            message: "Education must be an array" 
+          });
+        }
+        user.education = parsedEducation;
+      } catch (error) {
+        console.log("Education parse error:", error.message);
         return res.status(400).json({ 
-          message: "Education must be an array" 
+          message: "Invalid education format" 
         });
       }
-      user.education = education;
     }
 
     await user.save();
+    console.log("User saved successfully. Profile image:", user.profileImage);
 
     res.json({
       message: "Profile updated successfully",
@@ -459,7 +492,7 @@ exports.updateOwnProfile = async (req, res) => {
         email: user.email,
         mobileNumber: user.mobileNumber,
         permanentAddress: user.permanentAddress,
-        profileImage: user.profileImage, // ✅ ADD THIS to response
+        profileImage: user.profileImage,
         role: user.role,
         currentPosition: user.currentPosition,
         experience: user.experience,
@@ -468,7 +501,7 @@ exports.updateOwnProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("Update profile error:", error); // Add logging
+    console.error("Update profile error:", error);
     res.status(500).json({ error: error.message });
   }
 };
