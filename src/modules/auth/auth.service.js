@@ -160,7 +160,7 @@ const deleteUser = async (userId, currentUserId) => {
   return authRepo.deleteUser(userId);
 };
 
-const updateOwnProfile = async (userId, data) => {
+const updateOwnProfile = async (userId, data = {}) => {
   const {
     name,
     lastName,
