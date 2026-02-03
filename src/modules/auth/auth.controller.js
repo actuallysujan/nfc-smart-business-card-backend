@@ -1,7 +1,18 @@
 const authService = require("./auth.service");
+const logger = require("../../config/logger");
 
+///Logger==>>>
+exports.login = async (req, res) => {
+  try {
+    logger.info("Login attempt", { email: req.body.email });
+
+    res.status(200).json({ message: "Login success" });
+  } catch (error) {
+    logger.error("Login failed", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 /* ================= PUBLIC ================= */
-
 const login = async (req, res) => {
   try {
     const result = await authService.login(req.body);

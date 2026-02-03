@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const requestLogger = require("./middlewares/logger.middleware");
 
 const authRoutes = require("./modules/auth/auth.routes");
 
@@ -15,6 +16,8 @@ app.use(cors());
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+app.use(requestLogger);
 
 // Body parsers
 app.use(express.json());
@@ -45,5 +48,7 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
+
+
 
 module.exports = app;
