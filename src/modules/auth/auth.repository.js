@@ -42,13 +42,47 @@ const deleteUser = async (userId) => {
 };
 
 const updateUserProfile = async (userId, updateData) => {
-  return User.findByIdAndUpdate(
-    userId,
-    { $set: updateData },
-    { new: true, runValidators: true }
-  )
-    .select("-password")
-    .populate("createdBy", "name email");
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🟣 REPOSITORY - updateUserProfile called');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📍 userId:', userId);
+  console.log('📍 updateData:', JSON.stringify(updateData, null, 2));
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  try {
+    console.log('🔄 Executing findByIdAndUpdate...');
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    )
+      .select("-password")
+      .populate("createdBy", "name email");
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✅ REPOSITORY - Database update successful');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📦 Updated user from DB:');
+    console.log('  - _id:', updatedUser?._id);
+    console.log('  - name:', updatedUser?.name);
+    console.log('  - lastName:', updatedUser?.lastName);
+    console.log('  - mobileNumber:', updatedUser?.mobileNumber);
+    console.log('  - permanentAddress:', updatedUser?.permanentAddress);
+    console.log('  - currentPosition:', updatedUser?.currentPosition);
+    console.log('  - updatedAt:', updatedUser?.updatedAt);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
+    return updatedUser;
+  } catch (error) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('❌ REPOSITORY ERROR');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    throw error;
+  }
 };
 
 module.exports = {

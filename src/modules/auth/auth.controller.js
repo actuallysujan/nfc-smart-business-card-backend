@@ -213,7 +213,32 @@ const getOwnProfile = async (req, res) => {
 
 const updateOwnProfile = async (req, res) => {
   try {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🔵 CONTROLLER - updateOwnProfile called');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📍 req.user:', req.user);
+    console.log('📍 req.user._id:', req.user?._id);
+    console.log('📍 req.body:', req.body);
+    console.log('📍 Content-Type:', req.headers['content-type']);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
+    // Check if user is authenticated
+    if (!req.user || !req.user._id) {
+      console.log('❌ No user found in request');
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Check if body has data
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.log('❌ Empty request body');
+      return res.status(400).json({ message: "No data provided" });
+    }
+    
     const user = await authService.updateOwnProfile(req.user._id, req.body);
+    
+    console.log('✅ CONTROLLER - Update successful');
+    console.log('📦 Updated user:', user);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
     res.json({
       message: "Profile updated successfully",
@@ -233,6 +258,13 @@ const updateOwnProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('❌ CONTROLLER ERROR');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
     res.status(400).json({ message: error.message });
   }
 };

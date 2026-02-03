@@ -161,6 +161,13 @@ const deleteUser = async (userId, currentUserId) => {
 };
 
 const updateOwnProfile = async (userId, data = {}) => {
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🟢 SERVICE - updateOwnProfile called');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('📍 userId:', userId);
+  console.log('📍 data received:', JSON.stringify(data, null, 2));
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
   const {
     name,
     lastName,
@@ -174,17 +181,33 @@ const updateOwnProfile = async (userId, data = {}) => {
   // Build update object with only provided fields
   const updateData = {};
   
-  if (name !== undefined) updateData.name = name;
-  if (lastName !== undefined) updateData.lastName = lastName;
-  if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
-  if (permanentAddress !== undefined) updateData.permanentAddress = permanentAddress;
-  if (currentPosition !== undefined) updateData.currentPosition = currentPosition;
+  if (name !== undefined) {
+    updateData.name = name;
+    console.log('  ✓ Adding name:', name);
+  }
+  if (lastName !== undefined) {
+    updateData.lastName = lastName;
+    console.log('  ✓ Adding lastName:', lastName);
+  }
+  if (mobileNumber !== undefined) {
+    updateData.mobileNumber = mobileNumber;
+    console.log('  ✓ Adding mobileNumber:', mobileNumber);
+  }
+  if (permanentAddress !== undefined) {
+    updateData.permanentAddress = permanentAddress;
+    console.log('  ✓ Adding permanentAddress:', permanentAddress);
+  }
+  if (currentPosition !== undefined) {
+    updateData.currentPosition = currentPosition;
+    console.log('  ✓ Adding currentPosition:', currentPosition);
+  }
 
   if (experience !== undefined) {
     if (!Array.isArray(experience)) {
       throw new Error("Experience must be an array");
     }
     updateData.experience = experience;
+    console.log('  ✓ Adding experience:', experience);
   }
 
   if (education !== undefined) {
@@ -192,15 +215,34 @@ const updateOwnProfile = async (userId, data = {}) => {
       throw new Error("Education must be an array");
     }
     updateData.education = education;
+    console.log('  ✓ Adding education:', education);
+  }
+
+  console.log('\n📦 Final updateData object:', JSON.stringify(updateData, null, 2));
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+
+  if (Object.keys(updateData).length === 0) {
+    console.log('❌ No fields to update');
+    throw new Error("No fields to update");
   }
 
   // Use the repository method for update
+  console.log('🔄 Calling repository.updateUserProfile...');
   const user = await authRepo.updateUserProfile(userId, updateData);
   
-  if (!user) throw new Error("User not found");
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('✅ SERVICE - Update successful');
+  console.log('📦 Returned user:', user);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  
+  if (!user) {
+    console.log('❌ User not found after update');
+    throw new Error("User not found");
+  }
 
   return user;
 };
+
 
 module.exports = {
   login,
