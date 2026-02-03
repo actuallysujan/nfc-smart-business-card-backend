@@ -1,9 +1,10 @@
 const authService = require("./auth.service");
 
-exports.login = async (req, res) => {
+/* ================= PUBLIC ================= */
+
+const login = async (req, res) => {
   try {
     const result = await authService.login(req.body);
-
     res.json({
       message: "Login successful",
       token: result.token,
@@ -19,10 +20,9 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.registerSuperAdmin = async (req, res) => {
+const registerSuperAdmin = async (req, res) => {
   try {
     const user = await authService.registerSuperAdmin(req.body);
-
     res.status(201).json({
       message: "Super admin created",
       userId: user._id,
@@ -30,4 +30,27 @@ exports.registerSuperAdmin = async (req, res) => {
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
+};
+
+/* ================= PROTECTED ================= */
+
+// TEMP minimal handlers (so routes don’t crash)
+const registerUser = async (req, res) => {
+  res.json({ message: "registerUser working" });
+};
+
+const getAllUsers = async (req, res) => {
+  res.json({ message: "getAllUsers working" });
+};
+
+const getOwnProfile = async (req, res) => {
+  res.json({ message: "getOwnProfile working" });
+};
+
+module.exports = {
+  login,
+  registerSuperAdmin,
+  registerUser,
+  getAllUsers,
+  getOwnProfile,
 };
