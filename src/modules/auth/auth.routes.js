@@ -21,6 +21,6 @@ router.delete("/users/:userId", protect(["SUPER_ADMIN", "ADMIN"]), authControlle
 
 /* ================= PROTECTED ROUTES (ALL AUTHENTICATED USERS) ================= */
 router.get("/profile", protect(), authController.getOwnProfile);
-router.patch("/profile", protect(), authController.updateOwnProfile); 
+router.put("/profile", protect(), authController.updateOwnProfile); 
 
 module.exports = router;
