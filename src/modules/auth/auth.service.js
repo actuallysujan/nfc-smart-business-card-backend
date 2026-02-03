@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const authRepo = require("./auth.repository");
 
-exports.login = async ({ email, password }) => {
+const login = async ({ email, password }) => {
   const user = await authRepo.findByEmail(email);
   if (!user) throw new Error("Invalid credentials");
 
@@ -22,7 +22,7 @@ exports.login = async ({ email, password }) => {
   return { token, user };
 };
 
-exports.registerSuperAdmin = async (data) => {
+const registerSuperAdmin = async (data) => {
   const existing = await authRepo.findByEmail(data.email);
   if (existing) throw new Error("User already exists");
 
@@ -34,10 +34,144 @@ exports.registerSuperAdmin = async (data) => {
     role: "SUPER_ADMIN",
   });
 };
+
+const registerUser = async (data, createdByUserId) => {
+  const { name, email, password, role } = data;
+
+  // Validation
+  if (!name || !email || !password) {
+    throw new Error("All fields are required");
+  }
+
+  // Validate role - only ADMIN or USER can be created
+  const allowedRoles = ["USER", "ADMIN"];
+  if (role && !allowedRoles.includes(role)) {
+    throw new Error("Invalid role. Only USER or ADMIN roles can be assigned.");
+  }
+
+  const existing = await authRepo.findByEmail(email);
+  if (existing) throw new Error("User already exists");
+
+  const hashed = await bcrypt.hash(password, 10);
+
+  return authRepo.createUser({
+    name,
+    email,
+    password: hashed,
+    role: role || "USER",
+    createdBy: createdByUserId,
+  });
+};
+
 const getAllUsers = async () => {
-  return await userRepository.findAllUsers();
+  const users = await authRepo.findAllUsers();
+
+  // Format the response to match your admin screen needs
+  const formattedUsers = users.map(user => ({
+    id: user._id,
+    name: user.name,
+    lastName: user.lastName || "",
+    email: user.email,
+    phone: user.mobileNumber || "Not provided",
+    address: user.permanentAddress || "Not provided",
+    profileImage: user.profileImage || null,
+    joinDate: user.createdAt ? user.createdAt.toISOString().split('T')[0] : "N/A",
+    status: user.isActive ? "Active" : "Inactive",
+    role: user.role,
+    currentPosition: user.currentPosition,
+    experience: user.experience || [],
+    education: user.education || [],
+    createdBy: user.createdBy ? {
+      name: user.createdBy.name,
+      email: user.createdBy.email
+    } : null,
+  }));
+
+  return formattedUsers;
+};
+
+const getUserById = async (userId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+  return user;
+};
+
+const promoteToAdmin = async (userId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.role === "SUPER_ADMIN") {
+    throw new Error("Cannot modify super admin role");
+  }
+
+  if (user.role === "ADMIN") {
+    throw new Error("User is already an admin");
+  }
+
+  return authRepo.updateUserRole(userId, "ADMIN");
+};
+
+const demoteToUser = async (userId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.role === "SUPER_ADMIN") {
+    throw new Error("Cannot modify super admin role");
+  }
+
+  if (user.role === "USER") {
+    throw new Error("User already has USER role");
+  }
+
+  return authRepo.updateUserRole(userId, "USER");
+};
+
+const deactivateUser = async (userId, currentUserId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.role === "SUPER_ADMIN") {
+    throw new Error("Cannot deactivate super admin account");
+  }
+
+  if (user._id.toString() === currentUserId) {
+    throw new Error("Cannot deactivate your own account");
+  }
+
+  return authRepo.updateUserStatus(userId, false);
+};
+
+const activateUser = async (userId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  return authRepo.updateUserStatus(userId, true);
+};
+
+const deleteUser = async (userId, currentUserId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  if (user.role === "SUPER_ADMIN") {
+    throw new Error("Cannot delete super admin account");
+  }
+
+  if (user._id.toString() === currentUserId) {
+    throw new Error("Cannot delete your own account");
+  }
+
+  return authRepo.deleteUser(userId);
 };
 
 module.exports = {
+  login,
+  registerSuperAdmin,
+  registerUser,
   getAllUsers,
+  getUserById,
+  promoteToAdmin,
+  demoteToUser,
+  deactivateUser,
+  activateUser,
+  deleteUser,
 };
