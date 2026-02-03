@@ -210,5 +210,5 @@ module.exports = {
   deactivateUser,
   activateUser,
   deleteUser,
-  updateOwnProfile, // ✅ Add this
+  updateOwnProfile, 
 };

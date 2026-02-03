@@ -245,5 +245,5 @@ module.exports = {
   
   // All authenticated
   getOwnProfile,
-  updateOwnProfile, // ✅ Add this
+  updateOwnProfile, 
 };
