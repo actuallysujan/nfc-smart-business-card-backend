@@ -171,31 +171,34 @@ const updateOwnProfile = async (userId, data = {}) => {
     education,
   } = data;
 
-  const user = await authRepo.findById(userId);
-  if (!user) throw new Error("User not found");
-
-  // Update fields
-  if (name !== undefined) user.name = name;
-  if (lastName !== undefined) user.lastName = lastName;
-  if (mobileNumber !== undefined) user.mobileNumber = mobileNumber;
-  if (permanentAddress !== undefined) user.permanentAddress = permanentAddress;
-  if (currentPosition !== undefined) user.currentPosition = currentPosition;
+  // Build update object with only provided fields
+  const updateData = {};
+  
+  if (name !== undefined) updateData.name = name;
+  if (lastName !== undefined) updateData.lastName = lastName;
+  if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
+  if (permanentAddress !== undefined) updateData.permanentAddress = permanentAddress;
+  if (currentPosition !== undefined) updateData.currentPosition = currentPosition;
 
   if (experience !== undefined) {
     if (!Array.isArray(experience)) {
       throw new Error("Experience must be an array");
     }
-    user.experience = experience;
+    updateData.experience = experience;
   }
 
   if (education !== undefined) {
     if (!Array.isArray(education)) {
       throw new Error("Education must be an array");
     }
-    user.education = education;
+    updateData.education = education;
   }
 
-  await user.save();
+  // Use the repository method for update
+  const user = await authRepo.updateUserProfile(userId, updateData);
+  
+  if (!user) throw new Error("User not found");
+
   return user;
 };
 

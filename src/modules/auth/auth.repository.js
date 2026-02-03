@@ -41,6 +41,16 @@ const deleteUser = async (userId) => {
   return user;
 };
 
+const updateUserProfile = async (userId, updateData) => {
+  return User.findByIdAndUpdate(
+    userId,
+    { $set: updateData },
+    { new: true, runValidators: true }
+  )
+    .select("-password")
+    .populate("createdBy", "name email");
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -49,4 +59,5 @@ module.exports = {
   updateUserRole,
   updateUserStatus,
   deleteUser,
+  updateUserProfile,
 };
