@@ -38,12 +38,10 @@ const registerSuperAdmin = async (data) => {
 const registerUser = async (data, createdByUserId) => {
   const { name, email, password, role } = data;
 
-  // Validation
   if (!name || !email || !password) {
     throw new Error("All fields are required");
   }
 
-  // Validate role - only ADMIN or USER can be created
   const allowedRoles = ["USER", "ADMIN"];
   if (role && !allowedRoles.includes(role)) {
     throw new Error("Invalid role. Only USER or ADMIN roles can be assigned.");
@@ -66,7 +64,6 @@ const registerUser = async (data, createdByUserId) => {
 const getAllUsers = async () => {
   const users = await authRepo.findAllUsers();
 
-  // Format the response to match your admin screen needs
   const formattedUsers = users.map(user => ({
     id: user._id,
     name: user.name,
@@ -134,7 +131,7 @@ const deactivateUser = async (userId, currentUserId) => {
     throw new Error("Cannot deactivate super admin account");
   }
 
-  if (user._id.toString() === currentUserId) {
+  if (user._id.toString() === currentUserId.toString()) {
     throw new Error("Cannot deactivate your own account");
   }
 
@@ -156,11 +153,50 @@ const deleteUser = async (userId, currentUserId) => {
     throw new Error("Cannot delete super admin account");
   }
 
-  if (user._id.toString() === currentUserId) {
+  if (user._id.toString() === currentUserId.toString()) {
     throw new Error("Cannot delete your own account");
   }
 
   return authRepo.deleteUser(userId);
+};
+
+const updateOwnProfile = async (userId, data) => {
+  const {
+    name,
+    lastName,
+    mobileNumber,
+    permanentAddress,
+    currentPosition,
+    experience,
+    education,
+  } = data;
+
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  // Update fields
+  if (name !== undefined) user.name = name;
+  if (lastName !== undefined) user.lastName = lastName;
+  if (mobileNumber !== undefined) user.mobileNumber = mobileNumber;
+  if (permanentAddress !== undefined) user.permanentAddress = permanentAddress;
+  if (currentPosition !== undefined) user.currentPosition = currentPosition;
+
+  if (experience !== undefined) {
+    if (!Array.isArray(experience)) {
+      throw new Error("Experience must be an array");
+    }
+    user.experience = experience;
+  }
+
+  if (education !== undefined) {
+    if (!Array.isArray(education)) {
+      throw new Error("Education must be an array");
+    }
+    user.education = education;
+  }
+
+  await user.save();
+  return user;
 };
 
 module.exports = {
@@ -174,4 +210,5 @@ module.exports = {
   deactivateUser,
   activateUser,
   deleteUser,
+  updateOwnProfile, // ✅ Add this
 };

@@ -41,7 +41,7 @@ const registerSuperAdmin = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const user = await authService.registerUser(req.body, req.user.userId);
+    const user = await authService.registerUser(req.body, req.user._id);
     res.status(201).json({
       message: "User registered successfully",
       user: {
@@ -121,7 +121,7 @@ const getUserById = async (req, res) => {
 
 const deactivateUser = async (req, res) => {
   try {
-    const user = await authService.deactivateUser(req.params.userId, req.user.userId);
+    const user = await authService.deactivateUser(req.params.userId, req.user._id);
     res.json({
       message: "User deactivated successfully",
       user: {
@@ -155,7 +155,7 @@ const activateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const user = await authService.deleteUser(req.params.userId, req.user.userId);
+    const user = await authService.deleteUser(req.params.userId, req.user._id);
     res.json({
       message: "User deleted permanently",
       deletedUser: {
@@ -173,7 +173,7 @@ const deleteUser = async (req, res) => {
 
 const getOwnProfile = async (req, res) => {
   try {
-    const user = await authService.getUserById(req.user.userId);
+    const user = await authService.getUserById(req.user._id);
     
     res.json({
       message: "Profile retrieved successfully",
@@ -200,6 +200,32 @@ const getOwnProfile = async (req, res) => {
   }
 };
 
+const updateOwnProfile = async (req, res) => {
+  try {
+    const user = await authService.updateOwnProfile(req.user._id, req.body);
+    
+    res.json({
+      message: "Profile updated successfully",
+      user: {
+        userId: user._id,
+        fullName: user.name,
+        lastName: user.lastName,
+        email: user.email,
+        mobileNumber: user.mobileNumber,
+        permanentAddress: user.permanentAddress,
+        profileImage: user.profileImage,
+        role: user.role,
+        currentPosition: user.currentPosition,
+        experience: user.experience,
+        education: user.education,
+        updatedAt: user.updatedAt
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   // Public
   login,
@@ -219,4 +245,5 @@ module.exports = {
   
   // All authenticated
   getOwnProfile,
+  updateOwnProfile, // ✅ Add this
 };
