@@ -17,11 +17,12 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-app.use(requestLogger);
-
-// Body parsers
+// ✅ MOVE BODY PARSERS BEFORE requestLogger
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ NOW add requestLogger AFTER body parsers
+app.use(requestLogger);
 
 /* ================== ROUTES ================== */
 
@@ -48,7 +49,5 @@ app.use((err, req, res, next) => {
     message: err.message || "Internal Server Error",
   });
 });
-
-
 
 module.exports = app;
