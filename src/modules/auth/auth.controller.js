@@ -120,7 +120,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const user = await authService.getUserById(req.params.userId);
-    
+
     res.json({
       message: "User retrieved successfully",
       user,
@@ -185,7 +185,7 @@ const deleteUser = async (req, res) => {
 const getOwnProfile = async (req, res) => {
   try {
     const user = await authService.getUserById(req.user._id);
-    
+
     res.json({
       message: "Profile retrieved successfully",
       user: {
@@ -193,6 +193,7 @@ const getOwnProfile = async (req, res) => {
         fullName: user.name,
         lastName: user.lastName,
         email: user.email,
+        bio: user.bio,
         mobileNumber: user.mobileNumber,
         permanentAddress: user.permanentAddress,
         profileImage: user.profileImage,
@@ -214,7 +215,7 @@ const getOwnProfile = async (req, res) => {
 const updateOwnProfile = async (req, res) => {
   try {
 
-    
+
     // Check if user is authenticated
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "User not authenticated" });
@@ -225,11 +226,8 @@ const updateOwnProfile = async (req, res) => {
       console.log('❌ Empty request body');
       return res.status(400).json({ message: "No data provided" });
     }
-    
-    const user = await authService.updateOwnProfile(req.user._id, req.body);
-    
 
-    
+    const user = await authService.updateOwnProfile(req.user._id, req.body);
     res.json({
       message: "Profile updated successfully",
       user: {
@@ -237,6 +235,7 @@ const updateOwnProfile = async (req, res) => {
         fullName: user.name,
         lastName: user.lastName,
         email: user.email,
+        bio: user.bio, 
         mobileNumber: user.mobileNumber,
         permanentAddress: user.permanentAddress,
         profileImage: user.profileImage,
@@ -249,7 +248,7 @@ const updateOwnProfile = async (req, res) => {
     });
   } catch (error) {
 
-    
+
     res.status(400).json({ message: error.message });
   }
 };
@@ -258,20 +257,20 @@ module.exports = {
   // Public
   login,
   registerSuperAdmin,
-  
+
   // Super Admin only
   registerUser,
   promoteToAdmin,
   demoteToUser,
-  
+
   // Super Admin & Admin
   getAllUsers,
   getUserById,
   deactivateUser,
   activateUser,
   deleteUser,
-  
+
   // All authenticated
   getOwnProfile,
-  updateOwnProfile, 
+  updateOwnProfile,
 };

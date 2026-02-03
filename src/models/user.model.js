@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    profileImage: { type: String, default: null },
+    bio: { type: String, maxlength: 500 },
     role: {
       type: String,
       enum: ["SUPER_ADMIN", "ADMIN", "USER"],

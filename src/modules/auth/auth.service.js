@@ -69,9 +69,9 @@ const getAllUsers = async () => {
     name: user.name,
     lastName: user.lastName || "",
     email: user.email,
+    bio: user.bio,
     phone: user.mobileNumber || "Not provided",
     address: user.permanentAddress || "Not provided",
-    profileImage: user.profileImage || null,
     joinDate: user.createdAt ? user.createdAt.toISOString().split('T')[0] : "N/A",
     status: user.isActive ? "Active" : "Inactive",
     role: user.role,
@@ -164,6 +164,7 @@ const updateOwnProfile = async (userId, data = {}) => {
   const {
     name,
     lastName,
+    bio,
     mobileNumber,
     permanentAddress,
     currentPosition,
@@ -175,6 +176,7 @@ const updateOwnProfile = async (userId, data = {}) => {
   const updateData = {};
   
   if (name !== undefined) updateData.name = name;
+  if (bio !== undefined) updateData.bio = bio;
   if (lastName !== undefined) updateData.lastName = lastName;
   if (mobileNumber !== undefined) updateData.mobileNumber = mobileNumber;
   if (permanentAddress !== undefined) updateData.permanentAddress = permanentAddress;
