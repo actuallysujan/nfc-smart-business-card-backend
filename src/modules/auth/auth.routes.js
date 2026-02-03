@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const authController = require("../controllers/auth.controller");
-const { upload } = require("../config/cloudinary"); 
-const authMiddleware = require("../middleware/auth.middleware");
-const { protect, checkPermission } = require("../middleware/auth.middleware");
+const authController = require("./auth.controller");
+const { upload } = require("../../config/cloudinary"); 
+const authMiddleware = require("../../middlewares/auth.middleware");
+const { protect, checkPermission } = require("../../middlewares/auth.middleware");
 
 // ========== PUBLIC ROUTES (No Authentication Required) ==========
 
