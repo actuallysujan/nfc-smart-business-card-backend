@@ -40,7 +40,20 @@ const registerUser = async (req, res) => {
 };
 
 const getAllUsers = async (req, res) => {
-  res.json({ message: "getAllUsers working" });
+  try {
+    const users = await authService.getAllUsers();
+
+    res.status(200).json({
+      count: users.length,
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  getAllUsers,
 };
 
 const getOwnProfile = async (req, res) => {

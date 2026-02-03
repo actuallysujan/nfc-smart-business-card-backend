@@ -18,3 +18,11 @@ exports.getAllUsers = () => {
     .populate("createdBy", "name email")
     .sort({ createdAt: -1 });
 };
+
+const findAllUsers = async () => {
+  return await User.find().select("-password");
+};
+
+module.exports = {
+  findAllUsers,
+};

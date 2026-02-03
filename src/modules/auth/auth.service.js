@@ -34,3 +34,10 @@ exports.registerSuperAdmin = async (data) => {
     role: "SUPER_ADMIN",
   });
 };
+const getAllUsers = async () => {
+  return await userRepository.findAllUsers();
+};
+
+module.exports = {
+  getAllUsers,
+};

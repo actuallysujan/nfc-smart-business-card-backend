@@ -19,9 +19,11 @@ router.post(
 
 router.get(
   "/users",
-  protect(["SUPER_ADMIN", "ADMIN"]),
+  authMiddleware,
+  permit("SUPER_ADMIN", "ADMIN"),
   authController.getAllUsers
 );
+
 
 router.get(
   "/profile",
