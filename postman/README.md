@@ -9,7 +9,7 @@
 
 | File | Purpose |
 | --- | --- |
-| `nfc-smart-business-card.postman_collection.json` | Full Postman v2.1 collection with 21 requests covering all API routes, sample bodies, and auto-token test scripts |
+| `nfc-smart-business-card.postman_collection.json` | Full Postman v2.1 collection with 28 requests covering all API routes, sample bodies, and auto-token test scripts |
 | `nfc-smart-business-card.prod.postman_environment.json` | Environment configured for `https://nfc-smart-business-card-backend.onrender.com` |
 | `nfc-smart-business-card.local.postman_environment.json` | Environment configured for `http://localhost:5000` |
 
@@ -132,12 +132,18 @@ Supported formats: `jpeg`, `jpg`, `png`, `gif`, `webp` (max **5MB** per file).
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/auth/users` | `SUPER_ADMIN`, `ADMIN` | List all users (newest first) |
 | `GET` | `/api/v1/auth/users/:userId` | `SUPER_ADMIN`, `ADMIN` | Get a user by ID |
+| `PUT` | `/api/v1/auth/users/:userId` | `SUPER_ADMIN`, `ADMIN` | Update a user's profile (JSON or `form-data` with optional `profileImage`) |
+| `POST` / `PUT` | `/api/v1/auth/users/:userId/picture` | `SUPER_ADMIN`, `ADMIN` | Upload or replace a user's profile picture |
+| `DELETE` | `/api/v1/auth/users/:userId/picture` | `SUPER_ADMIN`, `ADMIN` | Remove a user's profile picture |
+| `POST` | `/api/v1/auth/users/:userId/images` | `SUPER_ADMIN`, `ADMIN` | Upload 1–10 gallery images for a user |
+| `PATCH` | `/api/v1/auth/users/:userId/images/:imageId` | `SUPER_ADMIN`, `ADMIN` | Update a user's gallery image caption |
+| `DELETE` | `/api/v1/auth/users/:userId/images/:imageId` | `SUPER_ADMIN`, `ADMIN` | Delete a user's gallery image |
 | `PATCH` | `/api/v1/auth/users/:userId/deactivate` | `SUPER_ADMIN`, `ADMIN` | Deactivate a user (`isActive: false`) |
 | `PATCH` | `/api/v1/auth/users/:userId/activate` | `SUPER_ADMIN`, `ADMIN` | Activate a user (`isActive: true`) |
 | `DELETE` | `/api/v1/auth/users/:userId` | `SUPER_ADMIN`, `ADMIN` | Permanently delete a user and their images |
 
-- **Path Params (`:userId`):** Target user's MongoDB ObjectId.
-- **Body:** None.
+- **Path Params:** `userId` *(target user's MongoDB ObjectId)*, `imageId` *(image subdocument ObjectId for image caption/delete routes)*.
+- **Notes:** `PUT /api/v1/auth/users/:userId` accepts all profile keys from `PUT /api/v1/auth/profile` plus `email`. `ADMIN` users cannot modify `SUPER_ADMIN` profiles.
 
 ---
 

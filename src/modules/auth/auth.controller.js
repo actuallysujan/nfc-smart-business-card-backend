@@ -327,8 +327,117 @@ const deleteImage = async (req, res) => {
       images,
     });
   } catch (error) {
-    const status = error.message === "Image not found" ? 404 : 400;
+    const status = error.statusCode || (error.message === "Image not found" ? 404 : 400);
     res.status(status).json({ message: error.message });
+  }
+};
+
+/* ================= ADMIN / SUPER_ADMIN TARGET USER PROFILE & IMAGES ================= */
+
+const updateUserProfile = async (req, res) => {
+  try {
+    const hasBody = req.body && Object.keys(req.body).length > 0;
+    if (!hasBody && !req.file) {
+      return res.status(400).json({ message: "No data provided" });
+    }
+
+    const user = await authService.updateUserProfileByAdmin(
+      req.params.userId,
+      req.body,
+      req.file,
+      req.user
+    );
+    res.json({
+      message: "User profile updated successfully",
+      user: formatProfileResponse(user),
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+const uploadUserProfilePicture = async (req, res) => {
+  try {
+    const user = await authService.updateUserPictureByAdmin(
+      req.params.userId,
+      req.file,
+      req.user
+    );
+    res.json({
+      message: "User profile picture updated successfully",
+      profileImage: user.profileImage,
+      user: formatProfileResponse(user),
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+const deleteUserProfilePicture = async (req, res) => {
+  try {
+    const user = await authService.deleteUserPictureByAdmin(
+      req.params.userId,
+      req.user
+    );
+    res.json({
+      message: "User profile picture removed successfully",
+      profileImage: "",
+      user: formatProfileResponse(user),
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+const uploadUserImages = async (req, res) => {
+  try {
+    const captionsInput = req.body?.captions ?? req.body?.caption;
+    const result = await authService.addUserImagesByAdmin(
+      req.params.userId,
+      req.uploadedImages,
+      captionsInput,
+      req.user
+    );
+    res.status(201).json({
+      message: "User images uploaded successfully",
+      count: result.images.length,
+      images: result.images,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+const updateUserImageCaption = async (req, res) => {
+  try {
+    const images = await authService.updateUserImageCaptionByAdmin(
+      req.params.userId,
+      req.params.imageId,
+      req.body?.caption,
+      req.user
+    );
+    res.json({
+      message: "User image caption updated successfully",
+      images,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
+  }
+};
+
+const deleteUserImage = async (req, res) => {
+  try {
+    const images = await authService.deleteUserImageByAdmin(
+      req.params.userId,
+      req.params.imageId,
+      req.user
+    );
+    res.json({
+      message: "User image deleted successfully",
+      images,
+    });
+  } catch (error) {
+    res.status(error.statusCode || 400).json({ message: error.message });
   }
 };
 
@@ -345,6 +454,12 @@ module.exports = {
   // Super Admin & Admin
   getAllUsers,
   getUserById,
+  updateUserProfile,
+  uploadUserProfilePicture,
+  deleteUserProfilePicture,
+  uploadUserImages,
+  updateUserImageCaption,
+  deleteUserImage,
   deactivateUser,
   activateUser,
   deleteUser,

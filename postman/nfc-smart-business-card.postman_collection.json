@@ -593,6 +593,243 @@
           "response": []
         },
         {
+          "name": "Update User Profile (JSON)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"bio\": \"Updated by Admin\",\n  \"mobileNumber\": \"+1-555-0100\",\n  \"permanentAddress\": \"456 Market Street\",\n  \"currentPosition\": \"Design Lead\",\n  \"experience\": [],\n  \"education\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Updates another user's profile fields via JSON (or `multipart/form-data` with optional `profileImage`). `ADMIN` cannot modify a `SUPER_ADMIN`.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId\n\n**Body Keys (`application/json`, all optional):**\n- `name`, `lastName`, `email`, `bio`, `mobileNumber`, `permanentAddress`, `currentPosition`, `experience`, `education`"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Profile (Multipart with Picture)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Jane",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated by Super Admin with photo",
+                  "type": "text"
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Optional image file (jpeg, jpg, png, gif, webp; max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Updates another user's profile fields and optionally replaces their `profileImage` via `multipart/form-data`.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload / Replace User Profile Picture",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Image file (jpeg, jpg, png, gif, webp; max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "picture"
+              ]
+            },
+            "description": "Uploads or replaces a target user's profile picture (`PUT` is also supported).\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Body Keys (`multipart/form-data`):**\n- `profileImage` (File, required — `image` field name also accepted)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User Profile Picture",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "picture"
+              ]
+            },
+            "description": "Removes a target user's profile picture and deletes the stored file.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload User Gallery Images",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select 1 to 10 image files"
+                },
+                {
+                  "key": "captions",
+                  "value": "[\"Card front\"]",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "images"
+              ]
+            },
+            "description": "Uploads 1–10 gallery images for a target user.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Body Keys (`multipart/form-data`):**\n- `images` (File(s), required — `image` also accepted)\n- `caption` / `captions` (Text, optional)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update User Image Caption",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Updated by Admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/images/{{imageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "images",
+                "{{imageId}}"
+              ]
+            },
+            "description": "Updates the caption of a specific gallery image on a target user's profile.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User Image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/images/{{imageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "images",
+                "{{imageId}}"
+              ]
+            },
+            "description": "Deletes a specific gallery image from a target user's profile and removes the stored file.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)"
+          },
+          "response": []
+        },
+        {
           "name": "Deactivate User",
           "request": {
             "method": "PATCH",

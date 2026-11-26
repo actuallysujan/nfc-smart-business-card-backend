@@ -213,10 +213,53 @@ const deleteUser = async (userId, currentUserId) => {
   return deletedUser;
 };
 
-const updateOwnProfile = async (userId, data = {}, file = null) => {
+const createServiceError = (message, statusCode = 400) => {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+};
+
+const cleanupUploadedFiles = async (files = [], folder) => {
+  await Promise.all(
+    files.filter(Boolean).map((file) => {
+      const { publicId, url } = extractUploadedFile(file, folder);
+      return deleteStoredImage(publicId, url);
+    })
+  );
+};
+
+const ensureCanEditUser = async (targetUserId, actorUser) => {
+  if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
+    throw createServiceError("Invalid user ID", 400);
+  }
+
+  const targetUser = await authRepo.findById(targetUserId);
+  if (!targetUser) {
+    throw createServiceError("User not found", 404);
+  }
+
+  if (
+    actorUser &&
+    targetUser.role === "SUPER_ADMIN" &&
+    actorUser.role !== "SUPER_ADMIN" &&
+    targetUser._id.toString() !== actorUser._id.toString()
+  ) {
+    throw createServiceError("Cannot modify super admin profile", 403);
+  }
+
+  return targetUser;
+};
+
+const updateOwnProfile = async (
+  userId,
+  data = {},
+  file = null,
+  { allowEmail = false } = {}
+) => {
   const {
     name,
     lastName,
+    email,
     bio,
     mobileNumber,
     permanentAddress,
@@ -235,12 +278,35 @@ const updateOwnProfile = async (userId, data = {}, file = null) => {
   if (permanentAddress !== undefined) updateData.permanentAddress = permanentAddress;
   if (currentPosition !== undefined) updateData.currentPosition = currentPosition;
 
+  if (allowEmail && email !== undefined) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+    const existingWithEmail = await authRepo.findByEmail(normalizedEmail);
+    if (
+      existingWithEmail &&
+      existingWithEmail._id.toString() !== userId.toString()
+    ) {
+      if (file) await cleanupUploadedFiles([file], "profiles");
+      throw createServiceError("Email is already in use", 400);
+    }
+    updateData.email = normalizedEmail;
+  }
+
   if (experience !== undefined) {
-    updateData.experience = parseArrayField(experience, "Experience");
+    try {
+      updateData.experience = parseArrayField(experience, "Experience");
+    } catch (err) {
+      if (file) await cleanupUploadedFiles([file], "profiles");
+      throw err;
+    }
   }
 
   if (education !== undefined) {
-    updateData.education = parseArrayField(education, "Education");
+    try {
+      updateData.education = parseArrayField(education, "Education");
+    } catch (err) {
+      if (file) await cleanupUploadedFiles([file], "profiles");
+      throw err;
+    }
   }
 
   let previousProfilePublicId = "";
@@ -252,7 +318,7 @@ const updateOwnProfile = async (userId, data = {}, file = null) => {
     const existingUser = await authRepo.findById(userId);
     if (!existingUser) {
       await deleteStoredImage(uploadedProfile.publicId, uploadedProfile.url);
-      throw new Error("User not found");
+      throw createServiceError("User not found", 404);
     }
     previousProfilePublicId = existingUser.profileImagePublicId || "";
     previousProfileImage = existingUser.profileImage || "";
@@ -275,7 +341,7 @@ const updateOwnProfile = async (userId, data = {}, file = null) => {
     if (uploadedProfile) {
       await deleteStoredImage(uploadedProfile.publicId, uploadedProfile.url);
     }
-    throw new Error("User not found");
+    throw createServiceError("User not found", 404);
   }
 
   if (
@@ -298,7 +364,7 @@ const updateProfilePicture = async (userId, file) => {
 
 const deleteProfilePicture = async (userId) => {
   const existingUser = await authRepo.findById(userId);
-  if (!existingUser) throw new Error("User not found");
+  if (!existingUser) throw createServiceError("User not found", 404);
 
   const previousProfilePublicId = existingUser.profileImagePublicId || "";
   const previousProfileImage = existingUser.profileImage || "";
@@ -315,7 +381,7 @@ const deleteProfilePicture = async (userId) => {
 
 const getOwnImages = async (userId) => {
   const user = await authRepo.findById(userId);
-  if (!user) throw new Error("User not found");
+  if (!user) throw createServiceError("User not found", 404);
 
   return {
     profileImage: user.profileImage || "",
@@ -359,7 +425,7 @@ const addImages = async (userId, files = [], captionsInput) => {
     await Promise.all(
       uploadedDocs.map((img) => deleteStoredImage(img.publicId, img.url))
     );
-    throw new Error("User not found");
+    throw createServiceError("User not found", 404);
   }
 
   return {
@@ -370,10 +436,10 @@ const addImages = async (userId, files = [], captionsInput) => {
 
 const updateImageCaption = async (userId, imageId, caption) => {
   if (!mongoose.Types.ObjectId.isValid(imageId)) {
-    throw new Error("Invalid image ID");
+    throw createServiceError("Invalid image ID", 400);
   }
   if (typeof caption !== "string") {
-    throw new Error("Caption must be a string");
+    throw createServiceError("Caption must be a string", 400);
   }
 
   const user = await authRepo.updateUserImageCaption(
@@ -381,26 +447,92 @@ const updateImageCaption = async (userId, imageId, caption) => {
     imageId,
     caption.trim()
   );
-  if (!user) throw new Error("Image not found");
+  if (!user) throw createServiceError("Image not found", 404);
 
   return formatImages(user.images);
 };
 
 const deleteImage = async (userId, imageId) => {
   if (!mongoose.Types.ObjectId.isValid(imageId)) {
-    throw new Error("Invalid image ID");
+    throw createServiceError("Invalid image ID", 400);
   }
 
   const existingUser = await authRepo.findById(userId);
-  if (!existingUser) throw new Error("User not found");
+  if (!existingUser) throw createServiceError("User not found", 404);
 
   const targetImage = existingUser.images?.id(imageId);
-  if (!targetImage) throw new Error("Image not found");
+  if (!targetImage) throw createServiceError("Image not found", 404);
 
   const updatedUser = await authRepo.removeUserImage(userId, imageId);
   await deleteStoredImage(targetImage.publicId, targetImage.url);
 
   return formatImages(updatedUser.images);
+};
+
+const updateUserProfileByAdmin = async (
+  targetUserId,
+  data = {},
+  file = null,
+  actorUser = null
+) => {
+  try {
+    await ensureCanEditUser(targetUserId, actorUser);
+  } catch (err) {
+    if (file) await cleanupUploadedFiles([file], "profiles");
+    throw err;
+  }
+  return updateOwnProfile(targetUserId, data, file, { allowEmail: true });
+};
+
+const updateUserPictureByAdmin = async (targetUserId, file, actorUser = null) => {
+  try {
+    await ensureCanEditUser(targetUserId, actorUser);
+  } catch (err) {
+    if (file) await cleanupUploadedFiles([file], "profiles");
+    throw err;
+  }
+  return updateProfilePicture(targetUserId, file);
+};
+
+const deleteUserPictureByAdmin = async (targetUserId, actorUser = null) => {
+  await ensureCanEditUser(targetUserId, actorUser);
+  return deleteProfilePicture(targetUserId);
+};
+
+const addUserImagesByAdmin = async (
+  targetUserId,
+  files = [],
+  captionsInput,
+  actorUser = null
+) => {
+  try {
+    await ensureCanEditUser(targetUserId, actorUser);
+  } catch (err) {
+    if (Array.isArray(files) && files.length > 0) {
+      await cleanupUploadedFiles(files, "images");
+    }
+    throw err;
+  }
+  return addImages(targetUserId, files, captionsInput);
+};
+
+const updateUserImageCaptionByAdmin = async (
+  targetUserId,
+  imageId,
+  caption,
+  actorUser = null
+) => {
+  await ensureCanEditUser(targetUserId, actorUser);
+  return updateImageCaption(targetUserId, imageId, caption);
+};
+
+const deleteUserImageByAdmin = async (
+  targetUserId,
+  imageId,
+  actorUser = null
+) => {
+  await ensureCanEditUser(targetUserId, actorUser);
+  return deleteImage(targetUserId, imageId);
 };
 
 module.exports = {
@@ -421,5 +553,11 @@ module.exports = {
   addImages,
   updateImageCaption,
   deleteImage,
+  updateUserProfileByAdmin,
+  updateUserPictureByAdmin,
+  deleteUserPictureByAdmin,
+  addUserImagesByAdmin,
+  updateUserImageCaptionByAdmin,
+  deleteUserImageByAdmin,
   formatImages,
 };

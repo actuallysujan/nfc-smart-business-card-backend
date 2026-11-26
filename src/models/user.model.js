@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, maxlength: 500 },
     role: {
       type: String,
-      enum: ["SUPER_ADMIN", "USER"],
+      enum: ["SUPER_ADMIN", "ADMIN", "USER"],
       default: "USER",
     },
     isActive: {

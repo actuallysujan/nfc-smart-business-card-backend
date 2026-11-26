@@ -20,6 +20,13 @@ router.patch("/users/:userId/demote", protect(["SUPER_ADMIN"]), authController.d
 /* ================= PROTECTED ROUTES (SUPER_ADMIN & ADMIN) ================= */
 router.get("/users", protect(["SUPER_ADMIN", "ADMIN"]), authController.getAllUsers);
 router.get("/users/:userId", protect(["SUPER_ADMIN", "ADMIN"]), authController.getUserById);
+router.put("/users/:userId", protect(["SUPER_ADMIN", "ADMIN"]), uploadOptionalProfilePicture, authController.updateUserProfile);
+router.post("/users/:userId/picture", protect(["SUPER_ADMIN", "ADMIN"]), uploadProfilePicture, authController.uploadUserProfilePicture);
+router.put("/users/:userId/picture", protect(["SUPER_ADMIN", "ADMIN"]), uploadProfilePicture, authController.uploadUserProfilePicture);
+router.delete("/users/:userId/picture", protect(["SUPER_ADMIN", "ADMIN"]), authController.deleteUserProfilePicture);
+router.post("/users/:userId/images", protect(["SUPER_ADMIN", "ADMIN"]), uploadGalleryImages, authController.uploadUserImages);
+router.patch("/users/:userId/images/:imageId", protect(["SUPER_ADMIN", "ADMIN"]), authController.updateUserImageCaption);
+router.delete("/users/:userId/images/:imageId", protect(["SUPER_ADMIN", "ADMIN"]), authController.deleteUserImage);
 router.patch("/users/:userId/deactivate", protect(["SUPER_ADMIN", "ADMIN"]), authController.deactivateUser);
 router.patch("/users/:userId/activate", protect(["SUPER_ADMIN", "ADMIN"]), authController.activateUser);
 router.delete("/users/:userId", protect(["SUPER_ADMIN", "ADMIN"]), authController.deleteUser);
