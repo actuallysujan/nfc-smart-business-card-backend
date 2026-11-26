@@ -51,6 +51,36 @@ const updateUserProfile = async (userId, updateData) => {
     .populate("createdBy", "name email");
 };
 
+const addUserImages = async (userId, images) => {
+  return User.findByIdAndUpdate(
+    userId,
+    { $push: { images: { $each: images } } },
+    { new: true, runValidators: true }
+  )
+    .select("-password")
+    .populate("createdBy", "name email");
+};
+
+const updateUserImageCaption = async (userId, imageId, caption) => {
+  return User.findOneAndUpdate(
+    { _id: userId, "images._id": imageId },
+    { $set: { "images.$.caption": caption } },
+    { new: true, runValidators: true }
+  )
+    .select("-password")
+    .populate("createdBy", "name email");
+};
+
+const removeUserImage = async (userId, imageId) => {
+  return User.findByIdAndUpdate(
+    userId,
+    { $pull: { images: { _id: imageId } } },
+    { new: true }
+  )
+    .select("-password")
+    .populate("createdBy", "name email");
+};
+
 module.exports = {
   findByEmail,
   findById,
@@ -60,4 +90,7 @@ module.exports = {
   updateUserStatus,
   deleteUser,
   updateUserProfile,
+  addUserImages,
+  updateUserImageCaption,
+  removeUserImage,
 };

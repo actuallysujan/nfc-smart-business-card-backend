@@ -1,6 +1,48 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 const authRepo = require("./auth.repository");
+const {
+  extractUploadedFile,
+  deleteStoredImage,
+} = require("../../config/upload");
+
+const formatImages = (images = []) =>
+  images.map((img) => ({
+    _id: img._id,
+    url: img.url,
+    caption: img.caption || "",
+    uploadedAt: img.uploadedAt,
+  }));
+
+const parseArrayField = (value, fieldName) => {
+  let parsed = value;
+  if (typeof value === "string") {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      throw new Error(`${fieldName} must be a valid JSON array`);
+    }
+  }
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${fieldName} must be an array`);
+  }
+  return parsed;
+};
+
+const parseCaptions = (captionsInput) => {
+  if (Array.isArray(captionsInput)) return captionsInput;
+  if (typeof captionsInput === "string") {
+    try {
+      const parsed = JSON.parse(captionsInput);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Treat plain string as a single caption applied to uploaded images
+    }
+    return [captionsInput];
+  }
+  return [];
+};
 
 const login = async ({ email, password }) => {
   const user = await authRepo.findByEmail(email);
@@ -76,6 +118,8 @@ const getAllUsers = async () => {
     status: user.isActive ? "Active" : "Inactive",
     role: user.role,
     currentPosition: user.currentPosition,
+    profileImage: user.profileImage || "",
+    images: formatImages(user.images),
     experience: user.experience || [],
     education: user.education || [],
     createdBy: user.createdBy ? {
@@ -157,10 +201,19 @@ const deleteUser = async (userId, currentUserId) => {
     throw new Error("Cannot delete your own account");
   }
 
-  return authRepo.deleteUser(userId);
+  const deletedUser = await authRepo.deleteUser(userId);
+
+  await deleteStoredImage(user.profileImagePublicId, user.profileImage);
+  if (Array.isArray(user.images) && user.images.length > 0) {
+    await Promise.all(
+      user.images.map((img) => deleteStoredImage(img.publicId, img.url))
+    );
+  }
+
+  return deletedUser;
 };
 
-const updateOwnProfile = async (userId, data = {}) => {
+const updateOwnProfile = async (userId, data = {}, file = null) => {
   const {
     name,
     lastName,
@@ -174,7 +227,7 @@ const updateOwnProfile = async (userId, data = {}) => {
 
   // Build update object with only provided fields
   const updateData = {};
-  
+
   if (name !== undefined) updateData.name = name;
   if (bio !== undefined) updateData.bio = bio;
   if (lastName !== undefined) updateData.lastName = lastName;
@@ -183,25 +236,171 @@ const updateOwnProfile = async (userId, data = {}) => {
   if (currentPosition !== undefined) updateData.currentPosition = currentPosition;
 
   if (experience !== undefined) {
-    if (!Array.isArray(experience)) {
-      throw new Error("Experience must be an array");
-    }
-    updateData.experience = experience;
+    updateData.experience = parseArrayField(experience, "Experience");
   }
 
   if (education !== undefined) {
-    if (!Array.isArray(education)) {
-      throw new Error("Education must be an array");
+    updateData.education = parseArrayField(education, "Education");
+  }
+
+  let previousProfilePublicId = "";
+  let previousProfileImage = "";
+  let uploadedProfile = null;
+
+  if (file) {
+    uploadedProfile = extractUploadedFile(file, "profiles");
+    const existingUser = await authRepo.findById(userId);
+    if (!existingUser) {
+      await deleteStoredImage(uploadedProfile.publicId, uploadedProfile.url);
+      throw new Error("User not found");
     }
-    updateData.education = education;
+    previousProfilePublicId = existingUser.profileImagePublicId || "";
+    previousProfileImage = existingUser.profileImage || "";
+    updateData.profileImage = uploadedProfile.url;
+    updateData.profileImagePublicId = uploadedProfile.publicId;
   }
 
   // Use the repository method for update
-  const user = await authRepo.updateUserProfile(userId, updateData);
-  
-  if (!user) throw new Error("User not found");
+  let user;
+  try {
+    user = await authRepo.updateUserProfile(userId, updateData);
+  } catch (err) {
+    if (uploadedProfile) {
+      await deleteStoredImage(uploadedProfile.publicId, uploadedProfile.url);
+    }
+    throw err;
+  }
+
+  if (!user) {
+    if (uploadedProfile) {
+      await deleteStoredImage(uploadedProfile.publicId, uploadedProfile.url);
+    }
+    throw new Error("User not found");
+  }
+
+  if (
+    uploadedProfile &&
+    (previousProfilePublicId || previousProfileImage) &&
+    previousProfilePublicId !== uploadedProfile.publicId
+  ) {
+    await deleteStoredImage(previousProfilePublicId, previousProfileImage);
+  }
 
   return user;
+};
+
+const updateProfilePicture = async (userId, file) => {
+  if (!file) {
+    throw new Error("Profile picture file is required");
+  }
+  return updateOwnProfile(userId, {}, file);
+};
+
+const deleteProfilePicture = async (userId) => {
+  const existingUser = await authRepo.findById(userId);
+  if (!existingUser) throw new Error("User not found");
+
+  const previousProfilePublicId = existingUser.profileImagePublicId || "";
+  const previousProfileImage = existingUser.profileImage || "";
+
+  const user = await authRepo.updateUserProfile(userId, {
+    profileImage: "",
+    profileImagePublicId: "",
+  });
+
+  await deleteStoredImage(previousProfilePublicId, previousProfileImage);
+
+  return user;
+};
+
+const getOwnImages = async (userId) => {
+  const user = await authRepo.findById(userId);
+  if (!user) throw new Error("User not found");
+
+  return {
+    profileImage: user.profileImage || "",
+    images: formatImages(user.images),
+  };
+};
+
+const addImages = async (userId, files = [], captionsInput) => {
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new Error("At least one image file is required");
+  }
+
+  const captions = parseCaptions(captionsInput);
+  const uploadedDocs = files.map((file, index) => {
+    const { url, publicId } = extractUploadedFile(file, "images");
+    const caption =
+      captions[index] !== undefined
+        ? String(captions[index]).trim()
+        : captions.length === 1
+          ? String(captions[0]).trim()
+          : "";
+
+    return {
+      url,
+      publicId,
+      caption,
+    };
+  });
+
+  let user;
+  try {
+    user = await authRepo.addUserImages(userId, uploadedDocs);
+  } catch (err) {
+    await Promise.all(
+      uploadedDocs.map((img) => deleteStoredImage(img.publicId, img.url))
+    );
+    throw err;
+  }
+
+  if (!user) {
+    await Promise.all(
+      uploadedDocs.map((img) => deleteStoredImage(img.publicId, img.url))
+    );
+    throw new Error("User not found");
+  }
+
+  return {
+    user,
+    images: formatImages(user.images),
+  };
+};
+
+const updateImageCaption = async (userId, imageId, caption) => {
+  if (!mongoose.Types.ObjectId.isValid(imageId)) {
+    throw new Error("Invalid image ID");
+  }
+  if (typeof caption !== "string") {
+    throw new Error("Caption must be a string");
+  }
+
+  const user = await authRepo.updateUserImageCaption(
+    userId,
+    imageId,
+    caption.trim()
+  );
+  if (!user) throw new Error("Image not found");
+
+  return formatImages(user.images);
+};
+
+const deleteImage = async (userId, imageId) => {
+  if (!mongoose.Types.ObjectId.isValid(imageId)) {
+    throw new Error("Invalid image ID");
+  }
+
+  const existingUser = await authRepo.findById(userId);
+  if (!existingUser) throw new Error("User not found");
+
+  const targetImage = existingUser.images?.id(imageId);
+  if (!targetImage) throw new Error("Image not found");
+
+  const updatedUser = await authRepo.removeUserImage(userId, imageId);
+  await deleteStoredImage(targetImage.publicId, targetImage.url);
+
+  return formatImages(updatedUser.images);
 };
 
 module.exports = {
@@ -215,5 +414,12 @@ module.exports = {
   deactivateUser,
   activateUser,
   deleteUser,
-  updateOwnProfile, 
+  updateOwnProfile,
+  updateProfilePicture,
+  deleteProfilePicture,
+  getOwnImages,
+  addImages,
+  updateImageCaption,
+  deleteImage,
+  formatImages,
 };

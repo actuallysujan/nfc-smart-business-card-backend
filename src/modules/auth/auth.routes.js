@@ -2,9 +2,14 @@ const express = require("express");
 const router = express.Router();
 const authController = require("./auth.controller");
 const { protect } = require("../../middlewares/auth.middleware");
+const {
+  uploadProfilePicture,
+  uploadOptionalProfilePicture,
+  uploadGalleryImages,
+} = require("../../config/upload");
 
 /* ================= PUBLIC ROUTES ================= */
-router.post("/register-super-admin", authController.registerSuperAdmin);
+router.post("/register-super-admin", authController.registerSuperAdmin);  //! This URL registers SUPER-ADMIN
 router.post("/login", authController.login);
 
 /* ================= PROTECTED ROUTES (SUPER_ADMIN ONLY) ================= */
@@ -21,6 +26,16 @@ router.delete("/users/:userId", protect(["SUPER_ADMIN", "ADMIN"]), authControlle
 
 /* ================= PROTECTED ROUTES (ALL AUTHENTICATED USERS) ================= */
 router.get("/profile", protect(), authController.getOwnProfile);
-router.put("/profile", protect(), authController.updateOwnProfile); 
+router.put("/profile", protect(), uploadOptionalProfilePicture, authController.updateOwnProfile);
+
+/* ================= PROFILE PICTURE & IMAGES ================= */
+router.post("/profile/picture", protect(), uploadProfilePicture, authController.uploadProfilePicture);
+router.put("/profile/picture", protect(), uploadProfilePicture, authController.uploadProfilePicture);
+router.delete("/profile/picture", protect(), authController.deleteProfilePicture);
+
+router.get("/profile/images", protect(), authController.getOwnImages);
+router.post("/profile/images", protect(), uploadGalleryImages, authController.uploadImages);
+router.patch("/profile/images/:imageId", protect(), authController.updateImageCaption);
+router.delete("/profile/images/:imageId", protect(), authController.deleteImage);
 
 module.exports = router;

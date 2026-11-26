@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
     bio: { type: String, maxlength: 500 },
     role: {
       type: String,
-      enum: ["SUPER_ADMIN", "ADMIN", "USER"],
+      enum: ["SUPER_ADMIN", "USER"],
       default: "USER",
     },
     isActive: {
@@ -45,6 +45,35 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    profileImage: {
+      type: String,
+      default: "",
+    },
+    profileImagePublicId: {
+      type: String,
+      default: "",
+    },
+    images: [
+      {
+        url: {
+          type: String,
+          required: true,
+        },
+        publicId: {
+          type: String,
+          default: "",
+        },
+        caption: {
+          type: String,
+          default: "",
+          maxlength: 200,
+        },
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     
     // Experience array
     experience: [

@@ -1,6 +1,26 @@
 const authService = require("./auth.service");
 const logger = require("../../config/logger");
 
+const formatProfileResponse = (user) => ({
+  userId: user._id,
+  fullName: user.name,
+  lastName: user.lastName,
+  email: user.email,
+  bio: user.bio,
+  mobileNumber: user.mobileNumber,
+  permanentAddress: user.permanentAddress,
+  profileImage: user.profileImage || "",
+  images: authService.formatImages(user.images),
+  role: user.role,
+  currentPosition: user.currentPosition,
+  experience: user.experience,
+  education: user.education,
+  isActive: user.isActive,
+  createdBy: user.createdBy,
+  createdAt: user.createdAt,
+  updatedAt: user.updatedAt,
+});
+
 ///Logger==>>>
 exports.login = async (req, res) => {
   try {
@@ -188,24 +208,7 @@ const getOwnProfile = async (req, res) => {
 
     res.json({
       message: "Profile retrieved successfully",
-      user: {
-        userId: user._id,
-        fullName: user.name,
-        lastName: user.lastName,
-        email: user.email,
-        bio: user.bio,
-        mobileNumber: user.mobileNumber,
-        permanentAddress: user.permanentAddress,
-        profileImage: user.profileImage,
-        role: user.role,
-        currentPosition: user.currentPosition,
-        experience: user.experience,
-        education: user.education,
-        isActive: user.isActive,
-        createdBy: user.createdBy,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }
+      user: formatProfileResponse(user),
     });
   } catch (error) {
     res.status(404).json({ message: error.message });
@@ -214,42 +217,118 @@ const getOwnProfile = async (req, res) => {
 
 const updateOwnProfile = async (req, res) => {
   try {
-
-
     // Check if user is authenticated
     if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    // Check if body has data
-    if (!req.body || Object.keys(req.body).length === 0) {
-      console.log('❌ Empty request body');
+    const hasBody = req.body && Object.keys(req.body).length > 0;
+    if (!hasBody && !req.file) {
       return res.status(400).json({ message: "No data provided" });
     }
 
-    const user = await authService.updateOwnProfile(req.user._id, req.body);
+    const user = await authService.updateOwnProfile(
+      req.user._id,
+      req.body,
+      req.file
+    );
     res.json({
       message: "Profile updated successfully",
-      user: {
-        userId: user._id,
-        fullName: user.name,
-        lastName: user.lastName,
-        email: user.email,
-        bio: user.bio, 
-        mobileNumber: user.mobileNumber,
-        permanentAddress: user.permanentAddress,
-        profileImage: user.profileImage,
-        role: user.role,
-        currentPosition: user.currentPosition,
-        experience: user.experience,
-        education: user.education,
-        updatedAt: user.updatedAt
-      }
+      user: formatProfileResponse(user),
     });
   } catch (error) {
-
-
     res.status(400).json({ message: error.message });
+  }
+};
+
+const uploadProfilePicture = async (req, res) => {
+  try {
+    const user = await authService.updateProfilePicture(req.user._id, req.file);
+    res.json({
+      message: "Profile picture updated successfully",
+      profileImage: user.profileImage,
+      user: formatProfileResponse(user),
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const deleteProfilePicture = async (req, res) => {
+  try {
+    const user = await authService.deleteProfilePicture(req.user._id);
+    res.json({
+      message: "Profile picture removed successfully",
+      profileImage: "",
+      user: formatProfileResponse(user),
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const getOwnImages = async (req, res) => {
+  try {
+    const result = await authService.getOwnImages(req.user._id);
+    res.json({
+      message: "Images retrieved successfully",
+      profileImage: result.profileImage,
+      count: result.images.length,
+      images: result.images,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
+};
+
+const uploadImages = async (req, res) => {
+  try {
+    const captionsInput = req.body?.captions ?? req.body?.caption;
+    const result = await authService.addImages(
+      req.user._id,
+      req.uploadedImages,
+      captionsInput
+    );
+    res.status(201).json({
+      message: "Images uploaded successfully",
+      count: result.images.length,
+      images: result.images,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const updateImageCaption = async (req, res) => {
+  try {
+    const images = await authService.updateImageCaption(
+      req.user._id,
+      req.params.imageId,
+      req.body?.caption
+    );
+    res.json({
+      message: "Image caption updated successfully",
+      images,
+    });
+  } catch (error) {
+    const status = error.message === "Image not found" ? 404 : 400;
+    res.status(status).json({ message: error.message });
+  }
+};
+
+const deleteImage = async (req, res) => {
+  try {
+    const images = await authService.deleteImage(
+      req.user._id,
+      req.params.imageId
+    );
+    res.json({
+      message: "Image deleted successfully",
+      images,
+    });
+  } catch (error) {
+    const status = error.message === "Image not found" ? 404 : 400;
+    res.status(status).json({ message: error.message });
   }
 };
 
@@ -273,4 +352,10 @@ module.exports = {
   // All authenticated
   getOwnProfile,
   updateOwnProfile,
+  uploadProfilePicture,
+  deleteProfilePicture,
+  getOwnImages,
+  uploadImages,
+  updateImageCaption,
+  deleteImage,
 };
