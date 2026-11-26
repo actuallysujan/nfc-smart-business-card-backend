@@ -1,0 +1,769 @@
+{
+  "info": {
+    "_postman_id": "8e1f4d3b-6c7a-4b2f-9d51-1f8e2c3a4b5d",
+    "name": "NFC Smart Business Card Backend API",
+    "description": "Complete Postman collection for the NFC Smart Business Card Backend.\n\nDefault `baseUrl` is set to the hosted Prod Demo API (`https://nfc-smart-business-card-backend.onrender.com`). You can switch between the included Prod and Local environments.\n\n### Quick Start\n1. Run **1. Auth (Public) -> Login** (or **Register Super Admin** first if no user exists).\n2. The Login request automatically saves the JWT to `{{token}}`.\n3. All protected requests inherit Bearer Auth using `{{token}}`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://nfc-smart-business-card-backend.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "imageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "imagePath",
+      "value": "/uploads/profiles/example.png",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Auth (Public)",
+      "description": "Public authentication endpoints (no Bearer token required).",
+      "item": [
+        {
+          "name": "Register Super Admin",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Super Admin\",\n  \"email\": \"superadmin@example.com\",\n  \"password\": \"StrongPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register-super-admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register-super-admin"
+              ]
+            },
+            "description": "Registers a new `SUPER_ADMIN` user.\n\n**Auth:** Public\n\n**Body Keys (`application/json`):**\n- `name` (string, required)\n- `email` (string, required, unique)\n- `password` (string, required)"
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const jsonData = pm.response.json();",
+                  "  if (jsonData.token) {",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    if (pm.environment && pm.environment.name) {",
+                  "      pm.environment.set(\"token\", jsonData.token);",
+                  "    }",
+                  "  }",
+                  "  if (jsonData.user && jsonData.user.userId) {",
+                  "    pm.collectionVariables.set(\"userId\", jsonData.user.userId);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"superadmin@example.com\",\n  \"password\": \"StrongPass123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates a user and returns a 7-day JWT `token`.\n\nAutomatically saves `token` and `userId` into Postman variables on HTTP 200.\n\n**Auth:** Public\n\n**Body Keys (`application/json`):**\n- `email` (string, required)\n- `password` (string, required)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Profile",
+      "description": "Authenticated user's own profile endpoints.",
+      "item": [
+        {
+          "name": "Get Own Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Retrieves the logged-in user's full profile, including `profileImage`, `images`, `experience`, and `education`.\n\n**Auth:** Bearer Token (any active user)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Own Profile (JSON)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John\",\n  \"lastName\": \"Doe\",\n  \"bio\": \"Product Engineer building NFC smart cards.\",\n  \"mobileNumber\": \"+1-555-0199\",\n  \"permanentAddress\": \"123 Main Street, Austin, TX\",\n  \"currentPosition\": \"Senior Software Engineer\",\n  \"experience\": [\n    {\n      \"company\": \"Acme Corp\",\n      \"position\": \"Senior Software Engineer\",\n      \"startDate\": \"2023-01-01\",\n      \"isCurrent\": true,\n      \"description\": \"Leading backend architecture\"\n    }\n  ],\n  \"education\": [\n    {\n      \"institution\": \"State University\",\n      \"degree\": \"B.S.\",\n      \"fieldOfStudy\": \"Computer Science\",\n      \"startDate\": \"2017-09-01\",\n      \"endDate\": \"2021-05-15\",\n      \"description\": \"Graduated with honors\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Updates one or more profile fields via JSON.\n\n**Auth:** Bearer Token (any active user)\n\n**Body Keys (`application/json`, all optional, provide at least one):**\n- `name` (string)\n- `lastName` (string)\n- `bio` (string, max 500 chars)\n- `mobileNumber` (string)\n- `permanentAddress` (string)\n- `currentPosition` (string)\n- `experience` (array of `{ company*, position*, startDate, endDate, description, isCurrent }`)\n- `education` (array of `{ institution*, degree*, fieldOfStudy, startDate, endDate, description }`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Own Profile (Multipart with Picture)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "John",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Updated bio with new profile photo.",
+                  "type": "text"
+                },
+                {
+                  "key": "currentPosition",
+                  "value": "Principal Engineer",
+                  "type": "text"
+                },
+                {
+                  "key": "experience",
+                  "value": "[{\"company\":\"Acme Corp\",\"position\":\"Principal Engineer\",\"isCurrent\":true}]",
+                  "type": "text",
+                  "disabled": true
+                },
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select jpeg/jpg/png/gif/webp file (max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile"
+              ]
+            },
+            "description": "Updates profile fields and optionally uploads/replaces `profileImage` in one `multipart/form-data` request.\n\n**Auth:** Bearer Token (any active user)\n\n**Body Keys (`multipart/form-data`):**\n- `profileImage` (File, optional — `image` key also accepted; max 5MB; `jpeg/jpg/png/gif/webp`)\n- Any text profile keys (`name`, `lastName`, `bio`, `mobileNumber`, `permanentAddress`, `currentPosition`)\n- `experience` / `education` (Text containing a JSON array string)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Profile Picture & Images",
+      "description": "Upload, list, update captions, and delete profile pictures and gallery images.",
+      "item": [
+        {
+          "name": "Upload Profile Picture (POST)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const jsonData = pm.response.json();",
+                  "  if (jsonData.profileImage) {",
+                  "    pm.collectionVariables.set(\"imagePath\", jsonData.profileImage);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Image file (jpeg, jpg, png, gif, webp; max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "picture"
+              ]
+            },
+            "description": "Uploads or replaces the logged-in user's profile picture. Automatically deletes the previous profile picture file.\n\n**Auth:** Bearer Token (any active user)\n\n**Body Keys (`multipart/form-data`):**\n- `profileImage` (File, required — `image` field name also accepted; `jpeg/jpg/png/gif/webp`, max 5MB)"
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Profile Picture (PUT)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": "",
+                  "description": "Replacement image file (jpeg, jpg, png, gif, webp; max 5MB)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "picture"
+              ]
+            },
+            "description": "REST alias for replacing the logged-in user's profile picture.\n\n**Auth:** Bearer Token (any active user)\n\n**Body Keys (`multipart/form-data`):**\n- `profileImage` (File, required — `image` field name also accepted)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Profile Picture",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/picture",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "picture"
+              ]
+            },
+            "description": "Removes the logged-in user's `profileImage` and deletes the stored image file.\n\n**Auth:** Bearer Token (any active user)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Own Images",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const jsonData = pm.response.json();",
+                  "  if (Array.isArray(jsonData.images) && jsonData.images.length > 0) {",
+                  "    pm.collectionVariables.set(\"imageId\", jsonData.images[0]._id);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "images"
+              ]
+            },
+            "description": "Lists the logged-in user's `profileImage` and all gallery `images` (`_id`, `url`, `caption`, `uploadedAt`).\n\nAutomatically saves the first image's `_id` to `{{imageId}}` if present.\n\n**Auth:** Bearer Token (any active user)"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Gallery Images",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const jsonData = pm.response.json();",
+                  "  if (Array.isArray(jsonData.images) && jsonData.images.length > 0) {",
+                  "    const last = jsonData.images[jsonData.images.length - 1];",
+                  "    pm.collectionVariables.set(\"imageId\", last._id);",
+                  "    pm.collectionVariables.set(\"imagePath\", last.url);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": "",
+                  "description": "Select 1 to 10 image files (jpeg, jpg, png, gif, webp; max 5MB each)"
+                },
+                {
+                  "key": "captions",
+                  "value": "[\"Card front\", \"Card back\"]",
+                  "type": "text",
+                  "description": "Optional JSON array of captions (or use `caption` text key for a single caption)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "images"
+              ]
+            },
+            "description": "Uploads 1 to 10 gallery images for the logged-in user.\n\n**Auth:** Bearer Token (any active user)\n\n**Body Keys (`multipart/form-data`):**\n- `images` (File(s), required — `image` field name also accepted; max 10 files, 5MB each)\n- `caption` (Text, optional, max 200 chars — applied to uploaded image(s))\n- `captions` (Text, optional — JSON array of caption strings matching file order, e.g. `[\"Front\", \"Back\"]`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Image Caption",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caption\": \"Updated NFC Card Showcase\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/images/{{imageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "images",
+                "{{imageId}}"
+              ]
+            },
+            "description": "Updates the caption of a specific gallery image belonging to the logged-in user.\n\n**Auth:** Bearer Token (any active user)\n\n**Path Params:**\n- `imageId` — MongoDB ObjectId of the image (`{{imageId}}`)\n\n**Body Keys (`application/json`):**\n- `caption` (string, required, max 200 chars)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/profile/images/{{imageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "profile",
+                "images",
+                "{{imageId}}"
+              ]
+            },
+            "description": "Deletes a specific gallery image by ID and removes the stored file.\n\n**Auth:** Bearer Token (any active user)\n\n**Path Params:**\n- `imageId` — MongoDB ObjectId of the image (`{{imageId}}`)"
+          },
+          "response": []
+        },
+        {
+          "name": "View Uploaded Static Image",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{imagePath}}",
+              "host": [
+                "{{baseUrl}}{{imagePath}}"
+              ]
+            },
+            "description": "Fetches a locally stored static image using the relative URL returned by upload endpoints (e.g. `/uploads/profiles/...` or `/uploads/images/...`).\n\nNote: If Cloudinary is configured in `.env`, the upload endpoints return full `https://...` URLs directly."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. User Management (ADMIN & SUPER_ADMIN)",
+      "description": "Endpoints restricted to `ADMIN` and `SUPER_ADMIN` roles.",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users"
+              ]
+            },
+            "description": "Returns all users sorted by newest first, including `profileImage` and `images`.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Retrieves a single user by `userId` (excluding password).\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/deactivate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "deactivate"
+              ]
+            },
+            "description": "Deactivates a user account (`isActive: false`). Cannot deactivate `SUPER_ADMIN` or your own account.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate User",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/activate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "activate"
+              ]
+            },
+            "description": "Reactivates a deactivated user account (`isActive: true`).\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "Permanently deletes a user and cleans up their stored `profileImage` and `images`. Cannot delete `SUPER_ADMIN` or your own account.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` or `ADMIN`)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Role Management (SUPER_ADMIN Only)",
+      "description": "Endpoints restricted strictly to `SUPER_ADMIN`.",
+      "item": [
+        {
+          "name": "Register User / Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const jsonData = pm.response.json();",
+                  "  if (jsonData.user && jsonData.user.userId) {",
+                  "    pm.collectionVariables.set(\"userId\", jsonData.user.userId);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"UserPass123!\",\n  \"role\": \"USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register-user",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register-user"
+              ]
+            },
+            "description": "Creates a new `USER` or `ADMIN` account.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` only)\n\n**Body Keys (`application/json`):**\n- `name` (string, required)\n- `email` (string, required, unique)\n- `password` (string, required)\n- `role` (string, optional — `\"USER\"` or `\"ADMIN\"`, defaults to `\"USER\"`)"
+          },
+          "response": []
+        },
+        {
+          "name": "Promote User to Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/promote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "promote"
+              ]
+            },
+            "description": "Promotes a `USER` to `ADMIN`.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` only)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        },
+        {
+          "name": "Demote Admin to User",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/users/{{userId}}/demote",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "users",
+                "{{userId}}",
+                "demote"
+              ]
+            },
+            "description": "Demotes an `ADMIN` back to `USER`.\n\n**Auth:** Bearer Token (`SUPER_ADMIN` only)\n\n**Path Params:**\n- `userId` — Target user's MongoDB ObjectId"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
